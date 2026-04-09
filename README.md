@@ -63,19 +63,31 @@ flowchart TD
 # Akış Algoritması
 ```mermaid
 flowchart TD
-    Start((Baslangic)) --> Req[Subnet Istegi Gelir]
-    Req --> Val{Format Gecerli mi?}
-    Val -->|Hayir| Err[HTTP 400 Hata Don] --> Finish((Bitir))
-    Val -->|Evet| Save[Veritabanina Kaydet]
-    Save --> Queue[Gorevi RabbitMQya Gonder]
-    Queue --> Res[Kullaniciya HTTP 201 Don]
-    Res --> Worker[Celery Gorevi Alir]
-    Worker --> Loop[Subnet Icindeki Her IP Icin]
-    Loop --> Ping{IPye Ping At}
-    Ping -->|Cevap Var| Act[Aktif Isaretle]
-    Ping -->|Cevap Yok| Pas[Pasif Isaretle]
-    Act --> Add[Gecici Listeye Ekle]
+    Start((Başlangıç)) --> Req[Yeni Subnet İsteği Gelir]
+    Req --> Val{Format Geçerli mi?}
+    Val -->|Hayır| Err[HTTP 400 Hata Dön] --> Finish((Bitir))
+    Val -->|Evet| Save[İsteği Veritabanına Kaydet]
+    Save --> Queue[Görevi RabbitMQ'ya İlet]
+    Queue --> Res[Kullanıcıya HTTP 201 Dön]
+    Res --> Worker[Celery Görevi Teslim Alır]
+    Worker --> Loop{{Döngü Başlat: Ağdaki Her Bir IP İçin}}
+    Loop --> Ping{Ping At ve Bekle}
+    Ping -->|Cevap Var| Act[Aktif Olarak İşaretle]
+    Ping -->|Cevap Yok| Pas[Pasif Olarak İşaretle]
+    Act --> Add[Geçici Listeye Ekle]
     Pas --> Add
-    Add -->|Dongu Biter| Bulk[DBye Toplu Kaydet]
+    Add -->|Sıradaki IP'ye Geç| Loop
+    Loop -->|Tüm IP'ler Bittiğinde| Bulk[Sonuçları Veritabanına Toplu Kaydet]
     Bulk --> Finish
 ```
+
+### Sonuçları Okuma (GET) ve Redis Cache Algoritması
+
+```mermaid
+flowchart TD
+    Start((Başlangıç)) --> Req[Kullanıcı Sonuçları İster GET]
+    Req --> Cache{Redis Önbelleğinde Kayıt Var mı?}
+    Cache -->|Evet Var| RedisReturn[Veriyi RAM'den Hızlıca Al] --> Finish((Bitir))
+    Cache -->|Hayır Yok| DB[Veriyi PostgreSQL'den Çek]
+    DB --> SetCache[Çekilen Veriyi 5 Dakikalığına Redis'e Yaz]
+    SetCache --> DBReturn[Kullanıcıya Dön] --> Finish
