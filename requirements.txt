@@ -1,0 +1,7 @@
+Django>=4.2,<5.0
+djangorestframework
+celery
+redis
+django-redis
+psycopg2-binary
+ping3
