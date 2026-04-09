@@ -52,17 +52,6 @@ Sonuçlar ilk okumadan sonra 5 dakikalığına Redis Cache üzerinde tutularak v
 # Topoloji
 ```mermaid
 flowchart TD
-    User(Kullanici / Postman) -->|HTTP POST / GET| Web[Django Web Sunucusu]
-    Web -->|Kayit ve Okuma| DB[(PostgreSQL)]
-    Web -->|Onbellek Okuma / Yazma| Redis[(Redis Cache)]
-    Web -->|Gorev Iletimi| MQ[[RabbitMQ]]
-    MQ -->|Gorevi Alir| Celery(Celery Worker)
-    Celery -->|ICMP Ping| Target((Hedef IPler))
-    Celery -->|Toplu Kayit bulk_create| DB
-```
-# Akış Algoritması
-```mermaid
-flowchart TD
     Start((Başlangıç)) --> Req[Yeni Subnet İsteği Gelir]
     Req --> Val{Format Geçerli mi?}
     Val -->|Hayır| Err[HTTP 400 Hata Dön] --> Finish((Bitir))
@@ -78,6 +67,25 @@ flowchart TD
     Pas --> Add
     Add -->|Sıradaki IP'ye Geç| Loop
     Loop -->|Tüm IP'ler Bittiğinde| Bulk[Sonuçları Veritabanına Toplu Kaydet]
+    Bulk --> Finish
+```
+# Akış Algoritması
+```mermaid
+flowchart TD
+    Start((Baslangic)) --> Req[Subnet Istegi Gelir]
+    Req --> Val{Format Gecerli mi?}
+    Val -->|Hayir| Err[HTTP 400 Hata Don] --> Finish((Bitir))
+    Val -->|Evet| Save[Veritabanina Kaydet]
+    Save --> Queue[Gorevi RabbitMQya Gonder]
+    Queue --> Res[Kullaniciya HTTP 201 Don]
+    Res --> Worker[Celery Gorevi Alir]
+    Worker --> Loop[Subnet Icindeki Her IP Icin]
+    Loop --> Ping{IPye Ping At}
+    Ping -->|Cevap Var| Act[Aktif Isaretle]
+    Ping -->|Cevap Yok| Pas[Pasif Isaretle]
+    Act --> Add[Gecici Listeye Ekle]
+    Pas --> Add
+    Add -->|Dongu Biter| Bulk[DBye Toplu Kaydet]
     Bulk --> Finish
 ```
 
