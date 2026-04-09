@@ -1,4 +1,4 @@
-# 🌐 Asenkron Subnet Ping & Log API
+#  Asenkron Subnet Ping & Log API
 
 Bu proje, kullanıcı tarafından girilen bir ağ adresindeki (Subnet) IP'lerin erişilebilirlik durumlarını (Ping) tespit etmek amacıyla geliştirilmiş microservice tabanlı bir REST API uygulamasıdır. 
 
@@ -6,7 +6,7 @@ Yüksek hacimli IP taramalarının sistemi kilitlemesini ve kullanıcıyı bekle
 
 ---
 
-## 🚀 Kullanılan Teknolojiler
+##  Kullanılan Teknolojiler
 * **Backend:** Python 3.11, Django, Django REST Framework (DRF)
 * **Asenkron İşleyici:** Celery
 * **Mesaj Kuyruğu (Broker):** RabbitMQ
@@ -16,7 +16,7 @@ Yüksek hacimli IP taramalarının sistemi kilitlemesini ve kullanıcıyı bekle
 
 ---
 
-## ⚙️ Kurulum ve Çalıştırma
+##  Kurulum ve Çalıştırma
 
 Proje tamamen Dockerize edilmiştir. Bilgisayarınızda sadece **Docker** ve **Docker Compose** kurulu olması yeterlidir.
 
@@ -28,7 +28,7 @@ Proje tamamen Dockerize edilmiştir. Bilgisayarınızda sadece **Docker** ve **D
     ```bash
     API Ana Adresi: http://localhost:8000/api/ping-requests/
    
-## 📡 API Kullanımı (Endpoints)
+##  API Kullanımı (Endpoints)
 1. Yeni Bir Subnet Taraması Başlatmak (POST)
 
 Endpoint: POST /api/ping-requests/
@@ -49,7 +49,8 @@ Endpoint: GET /api/ping-requests/<id>/
 
 Celery arka planda işlemleri bitirdiğinde sonuçlar bu adresten çekilir.
 Sonuçlar ilk okumadan sonra 5 dakikalığına Redis Cache üzerinde tutularak veritabanı maliyeti sıfıra indirilir.
-
+# Topoloji
+```mermaid
 flowchart TD
     User(Kullanici / Postman) -->|HTTP POST / GET| Web[Django Web Sunucusu]
     Web -->|Kayit ve Okuma| DB[(PostgreSQL)]
@@ -58,7 +59,9 @@ flowchart TD
     MQ -->|Gorevi Alir| Celery(Celery Worker)
     Celery -->|ICMP Ping| Target((Hedef IPler))
     Celery -->|Toplu Kayit bulk_create| DB
-
+```
+# Akış Algoritması
+```mermaid
 flowchart TD
     Start((Baslangic)) --> Req[Subnet Istegi Gelir]
     Req --> Val{Format Gecerli mi?}
@@ -75,3 +78,4 @@ flowchart TD
     Pas --> Add
     Add -->|Dongu Biter| Bulk[DBye Toplu Kaydet]
     Bulk --> Finish
+```
